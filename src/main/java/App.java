@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -13,8 +14,73 @@ public class App {
     }
 
     public String bestCharge(List<String> inputs) {
-        //TODO: write code here
+        double total = 0;
+        double save = 0;
+        double bestSave = 0;
+        String result = "============= 订餐明细 =============\n";
+        List<Item> items = itemRepository.findAll();
+        List<SalesPromotion> salesPromotions = salesPromotionRepository.findAll();
+        List<Item> buyItem = new ArrayList<Item>();
+        for (String input : inputs) {
+            String itemId = input.split(" x ")[0];
+            int quantity = Integer.parseInt(input.split(" x ")[1]);
+            Item item = findItem(itemId, items);
+            buyItem.add(item);
+            double money = item.getPrice() * quantity;
+            total += money;
+            result += item.getName() + " x " + quantity + " = " + (int)money + "元\n";
+        }
+        for (Item item : buyItem) {
+            List<String> saveItems = salesPromotions.get(1).getRelatedItems();
+            for (String saveItem : saveItems) {
+                if (item.getId().equals(saveItem)) {
+                    save += item.getPrice() / 2;
+                }
+            }
+        }
+        if (save > 0) {
+            result += "-----------------------------------\n使用优惠:\n";
+            String saveString = "";
+            if (total >= 30 && save < 6) {
+                bestSave = 6;
+                saveString = getSaveString(0);
+            }
+            if (save > 6) {
+                bestSave = save;
+                saveString = getSaveString(1);
+            }
+            result += saveString + "，省" + (int)bestSave + "元\n";
+        }
+        result += "-----------------------------------\n";
+        result += "总计：" + (int)(total - bestSave) + "元\n===================================";
+        return result;
+    }
 
+    public String getSaveString(int index) {
+        List<Item> items = itemRepository.findAll();
+        List<SalesPromotion> salesPromotions = salesPromotionRepository.findAll();
+        if (index == 0)
+            return salesPromotions.get(0).getDisplayName();
+        else {
+            String str = salesPromotions.get(1).getDisplayName() + "(";
+            List<String> saveItems = salesPromotions.get(1).getRelatedItems();
+            for (String saveItem : saveItems) {
+                for (Item item : items) {
+                    if (item.getId().equals(saveItem))
+                        str += item.getName() + "，";
+                }
+            }
+            str = str.substring(0, str.length() - 1) + ")";
+            return str;
+        }
+    }
+
+    public Item findItem(String id, List<Item> items) {
+        for (Item item : items) {
+            if (item.getId().equals(id))
+                return item;
+        }
         return null;
     }
+
 }
